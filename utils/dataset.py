@@ -17,13 +17,12 @@ class Dataset(Dataset):
         assert os.path.isdir(self.dataset_dir),'Test or Train dataset dir is incorrect! Fix it in config.json'
         
         format_data = c.dataset['format']
-        self.emb_list = self.find_files_by_format(format_data['emb'])
         self.target_spec_list = self.find_files_by_format(format_data['target'])
         self.mixed_spec_list = self.find_files_by_format(format_data['mixed'])
         self.target_wav_list = self.find_files_by_format(format_data['target_wav'])
         self.mixed_wav_list = self.find_files_by_format(format_data['mixed_wav'])
         # asserts for integrity
-        assert len(self.emb_list) == len(self.target_spec_list) == len(self.mixed_spec_list), " The number of target and mixed Specs and Embs not Match! Check its"
+        assert len(self.target_spec_list) == len(self.mixed_spec_list), " The number of target and mixed Specs not Match! Check its"
         assert len(self.target_spec_list) != 0, " Training files not found !"
 
     def find_files_by_format(self, glob_exp):
@@ -38,9 +37,8 @@ class Dataset(Dataset):
             mixed_phase = torch.from_numpy(np.array(mixed_phase))
             mixed_spec = torch.from_numpy(mixed_spec)
             target_wav = torch.from_numpy(target_wav)
-            return torch.load(self.emb_list[idx]), torch.load(self.target_spec_list[idx]), mixed_spec, seq_len, target_wav, mixed_phase  
+            return torch.load(self.target_spec_list[idx]), mixed_spec, seq_len, target_wav, mixed_phase  
         else: # if test
-            emb = torch.load(self.emb_list[idx])
             # target_spec = torch.load(self.target_spec_list[idx])
             # mixed_spec = torch.load(self.mixed_spec_list[idx])
             mixed_wav = self.ap.load_wav(self.mixed_wav_list[idx])
@@ -53,10 +51,10 @@ class Dataset(Dataset):
             target_wav = torch.from_numpy(target_wav)
             mixed_wav = torch.from_numpy(mixed_wav)
             seq_len = torch.from_numpy(np.array([mixed_wav.shape[0]]))
-            return emb, target_spec, mixed_spec, target_wav, mixed_wav, mixed_phase, seq_len
+            return target_spec, mixed_spec, target_wav, mixed_wav, mixed_phase, seq_len
 
     def __len__(self):
-        return len(self.emb_list)
+        return len(self.mixed_spec_list)
 def train_dataloader(c, ap):
     return DataLoader(dataset=Dataset(c, ap, train=True),
                           batch_size=c.train_config['batch_size'],
@@ -82,18 +80,12 @@ def eval_collate_fn(batch):
     return batch
 
 def train_collate_fn(item):
-    embs_list = []
     target_list = []
     mixed_list = []
     seq_len_list = []
     mixed_phase_list = []
     target_wav_list = []
-    for emb, target, mixed, seq_len, target_wav, mixed_phase in item:
-        #print(emb)
-        if emb.tolist() == [0]:
-            #print("ignorado ", emb)
-            continue
-        embs_list.append(emb)
+    for target, mixed, seq_len, target_wav, mixed_phase in item:
         target_list.append(target)
         mixed_list.append(mixed)
         seq_len_list.append(seq_len)
@@ -106,15 +98,9 @@ def train_collate_fn(item):
     seq_len_list = stack(seq_len_list, dim=0)
     target_wav_list = stack(target_wav_list, dim=0)
     mixed_phase_list = stack(mixed_phase_list, dim=0) # np.array(mixed_phase_list)
-    try:
-        embs_list = stack(embs_list, dim=0)
-    except:
-        #print('erro, stack')
-        embs_list = embs_list
-    return embs_list, target_list, mixed_list, seq_len_list, target_wav_list, mixed_phase_list
+    return target_list, mixed_list, seq_len_list, target_wav_list, mixed_phase_list
 
 def test_collate_fn(batch):
-    embs_list = []
     target_list = []
     mixed_list = []
     seq_len_list = []
@@ -122,12 +108,7 @@ def test_collate_fn(batch):
     target_wav_list = []
     mixed_wav_list = []
     
-    for emb, target, mixed, target_wav, mixed_wav, mixed_phase, seq_len in batch:
-        #print(emb)
-        if emb.tolist() == [0]:
-            #print("ignorado ", emb)
-            continue
-        embs_list.append(emb)
+    for target, mixed, target_wav, mixed_wav, mixed_phase, seq_len in batch:
         target_list.append(target)
         mixed_list.append(mixed)
         seq_len_list.append(seq_len)
@@ -142,10 +123,5 @@ def test_collate_fn(batch):
     target_wav_list = stack(target_wav_list, dim=0)
     mixed_phase_list = stack(mixed_phase_list, dim=0) # np.array(mixed_phase_list)
     mixed_wav_list = stack(mixed_wav_list, dim=0)
-    try:
-        embs_list = stack(embs_list, dim=0)
-    except:
-        #print('erro, stack')
-        embs_list = embs_list   
-    return embs_list, target_list, mixed_list, target_wav_list, mixed_wav_list, mixed_phase_list, seq_len_list
+    return target_list, mixed_list, target_wav_list, mixed_wav_list, mixed_phase_list, seq_len_list
   

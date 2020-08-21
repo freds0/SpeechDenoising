@@ -20,6 +20,7 @@ from utils.generic_utils import validation, PowerLaw_Compressed_Loss, SiSNR_With
 
 from models.voicefilter.model import VoiceFilter
 from models.voicesplit.model import VoiceSplit
+from models.voicedenoising.model import VoiceDenoising
 from utils.audio_processor import WrapperAudioProcessor as AudioProcessor 
 
 def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, c, model_name, ap, cuda=True):
@@ -27,6 +28,8 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
         model = VoiceFilter(c)
     elif(model_name == 'voicesplit'):
         model = VoiceSplit(c)
+    elif(model_name == 'voicedenoising'):
+        model = VoiceDenoising(c)
     else:
         raise Exception(" The model '"+model_name+"' is not suported")
 
@@ -82,7 +85,7 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
         validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda, loss_name=c.loss['loss_name'] )
         #break
         model.train()
-        for emb, target, mixed, seq_len, target_wav, spec_phase in trainloader:
+        for target, mixed, seq_len, target_wav, spec_phase in trainloader:
                 #try:
                 if cuda:
                     emb = emb.cuda()
@@ -91,7 +94,7 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     seq_len = seq_len.cuda()
                     spec_phase = spec_phase.cuda()
 
-                mask = model(mixed, emb)
+                mask = model(mixed)
                 output = mixed * mask
 
                 if c.loss['loss_name'] == 'si_snr':
