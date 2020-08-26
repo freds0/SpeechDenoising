@@ -2,6 +2,7 @@ import os
 from glob import glob
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence
 from torch import stack
 import numpy as np
 
@@ -93,11 +94,20 @@ def train_collate_fn(item):
         target_wav_list.append(target_wav)
 
     # concate tensors in dim 0
-    target_list = stack(target_list, dim=0)
-    mixed_list = stack(mixed_list, dim=0)
+    #target_list = stack(target_list, dim=0)
+    target_list = pad_sequence(target_list, batch_first=True, padding_value=0)
+
+    #mixed_list = stack(mixed_list, dim=0)
+    mixed_list = pad_sequence(mixed_list, batch_first=True, padding_value=0)
+
     seq_len_list = stack(seq_len_list, dim=0)
-    target_wav_list = stack(target_wav_list, dim=0)
-    mixed_phase_list = stack(mixed_phase_list, dim=0) # np.array(mixed_phase_list)
+    
+    #target_wav_list = stack(target_wav_list, dim=0)
+    target_wav_list = pad_sequence(target_wav_list, batch_first=True, padding_value=0)
+
+    #mixed_phase_list = stack(mixed_phase_list, dim=0) # np.array(mixed_phase_list)
+    mixed_phase_list = pad_sequence(mixed_phase_list, batch_first=True, padding_value=0)
+
     return target_list, mixed_list, seq_len_list, target_wav_list, mixed_phase_list
 
 def test_collate_fn(batch):

@@ -1,13 +1,11 @@
 {
-    "model_name":"voicesplit", // voicefilter and voicesplit
+    "model_name":"voicedenoising", // voicefilter and voicesplit
     "dataset":{
-        "train_dir":"../../LibriSpeech/voicefilter-open-fiel-ao-paper-data/train",
-        "test_dir":"../../LibriSpeech/voicefilter-open-fiel-ao-paper-data/test",
+        "train_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/train/",
+        "test_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/test/",
         "format":{ // format for glob search
-            "emb": "*-emb.pt",
             "mixed":"*-mixed.pt",
             "target":"*-target.pt",
-            "emb_wav":"*-ref_emb.wav",
             "target_wav":"*-target.wav",
             "mixed_wav": "*-mixed.wav"
         }
@@ -22,12 +20,12 @@
         "epochs": 1000,
         "learning_rate": 1e-2,
         "optimizer":"adam",
-        "batch_size": 2,
+        "batch_size": 1,
         "seed": 42,
         "num_workers": 14,
-        "logs_path": "../checkpoints/voicesplit-continue-si-snr/",
+        "logs_path": "./checkpoints/",
         "reinit_layers": null,
-        "summary_interval": 2,
+        "summary_interval": 100,
         "checkpoint_interval": 500
     },
     "test_config": {

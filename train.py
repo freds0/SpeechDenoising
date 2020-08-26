@@ -88,7 +88,6 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
         for target, mixed, seq_len, target_wav, spec_phase in trainloader:
                 #try:
                 if cuda:
-                    emb = emb.cuda()
                     target = target.cuda()
                     mixed = mixed.cuda()
                     seq_len = seq_len.cuda()
