@@ -12,20 +12,18 @@ import argparse
 from utils.generic_utils import load_config, load_config_from_str
 from utils.generic_utils import set_init_dict
 
-from utils.tensorboard import TensorboardWriter
+#from utils.tensorboard import TensorboardWriter
 
 from utils.dataset import test_dataloader
 
-from utils.generic_utils import validation, PowerLaw_Compressed_Loss, SiSNR_With_Pit
+#from utils.generic_utils import validation, PowerLaw_Compressed_Loss, SiSNR_With_Pit
 
 from models.voicefilter.model import VoiceFilter
 from models.voicesplit.model import VoiceSplit
 from models.voicedenoising.model import VoiceDenoising
 from utils.audio_processor import WrapperAudioProcessor as AudioProcessor 
 
-import librosa
-
-def test(args, log_dir, checkpoint_path, testloader, tensorboard, c, model_name, ap, cuda=True):
+def inference(args, log_dir, checkpoint_path, testloader, c, model_name, ap, cuda=True):
     if(model_name == 'voicefilter'):
         model = VoiceFilter(c)
     elif(model_name == 'voicesplit'):
@@ -34,12 +32,6 @@ def test(args, log_dir, checkpoint_path, testloader, tensorboard, c, model_name,
         model = VoiceDenoising(c)
     else:
         raise Exception(" The model '"+model_name+"' is not suported")
-
-    if c.train_config['optimizer'] == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(),
-                                     lr=c.train_config['learning_rate'])
-    else:
-        raise Exception("The %s  not is a optimizer supported" % c.train['optimizer'])
 
     step = 0
     if checkpoint_path is not None:
@@ -51,30 +43,39 @@ def test(args, log_dir, checkpoint_path, testloader, tensorboard, c, model_name,
         except:
             raise Exception("Fail in load checkpoint, you need use this configs: %s" %checkpoint['config_str'])
         
-        try:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-        except:
-            print(" > Optimizer state is not loaded from checkpoint path, you see this mybe you change the optimizer")
-        
-        step = checkpoint['step']
     else:
-        raise Exception("You need specific a checkpoint for test")
+        raise Exception("You need specific a checkpoint for inference")
+
     # convert model from cuda
     if cuda:
         model = model.cuda()
 
-    # definitions for power-law compressed loss
-    power = c.loss['power']
-    complex_ratio = c.loss['complex_loss_ratio']
+    model.eval()
+    count = 0
+    with torch.no_grad():
+        for batch in testloader:
+            try:
+                mixed_spec, mixed_wav, mixed_phase, seq_len = batch[0]
 
-    if c.loss['loss_name'] == 'power_law_compression':
-        criterion = PowerLaw_Compressed_Loss(power, complex_ratio)
-    elif c.loss['loss_name'] == 'si_snr':
-        criterion = SiSNR_With_Pit()
-    else:
-        raise Exception(" The loss '"+c.loss['loss_name']+"' is not suported")
-    return validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda, loss_name=c.loss['loss_name'], test=True)
+                mixed_spec = mixed_spec.unsqueeze(0)
 
+                if cuda:
+                    mixed_spec = mixed_spec.cuda()
+
+                est_mask = model(mixed_spec)
+                est_mag = est_mask * mixed_spec
+                mixed_spec = mixed_spec[0].cpu().detach().numpy()
+
+                est_mag = est_mag[0].cpu().detach().numpy()
+                mixed_phase = mixed_phase[0].cpu().detach().numpy()
+
+                est_wav = ap.inv_spectrogram(est_mag, phase=mixed_phase)
+                est_mask = est_mask[0].cpu().detach().numpy()
+
+                count+=1
+                print(count, 'of',testloader.__len__())
+            except:
+                continue
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -95,11 +96,10 @@ if __name__ == '__main__':
 
     ap = AudioProcessor(c.audio)
 
-    log_path = os.path.join(c.train_config['logs_path'], c.model_name)
     audio_config = c.audio[c.audio['backend']]
     tensorboard = TensorboardWriter(log_path, audio_config)
     # set test dataset dir
     c.dataset['test_dir'] = args.dataset_dir
 
     test_dataloader = test_dataloader(c, ap)
-    mean_loss, mean_sdr = test(args, log_path, args.checkpoint_path, test_dataloader, tensorboard, c, c.model_name, ap, cuda=True)
+    inference(args, log_path, args.checkpoint_path, test_dataloader, c, c.model_name, ap, cuda=True)

@@ -4,10 +4,10 @@
         "train_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/train/",
         "test_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/test/",
         "format":{ // format for glob search
-            "mixed":"*-mixed.pt",
+            "mixed":"*-mix.pt",
             "target":"*-target.pt",
             "target_wav":"*-target.wav",
-            "mixed_wav": "*-mixed.wav"
+            "mixed_wav": "*-mix.wav"
         }
 
     },
@@ -23,7 +23,7 @@
         "batch_size": 1,
         "seed": 42,
         "num_workers": 14,
-        "logs_path": "./checkpoints/",
+        "logs_path": "./checkpoints-29-08-20",
         "reinit_layers": null,
         "summary_interval": 100,
         "checkpoint_interval": 500

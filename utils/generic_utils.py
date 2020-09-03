@@ -481,18 +481,16 @@ def validation(criterion, ap, model, testloader, tensorboard, step, cuda=True, l
     with torch.no_grad():
         for batch in testloader:
             try:
-                emb, clean_spec, mixed_spec, clean_wav, mixed_wav, mixed_phase, seq_len = batch[0]
+                clean_spec, mixed_spec, clean_wav, mixed_wav, mixed_phase, seq_len = batch[0]
 
-                emb = emb.unsqueeze(0)
                 clean_spec = clean_spec.unsqueeze(0)
                 mixed_spec = mixed_spec.unsqueeze(0)
 
                 if cuda:
-                    emb = emb.cuda()
                     clean_spec = clean_spec.cuda()
                     mixed_spec = mixed_spec.cuda()
 
-                est_mask = model(mixed_spec, emb)
+                est_mask = model(mixed_spec)
                 est_mag = est_mask * mixed_spec
                 if loss_name == 'power_law_compression':
                     test_loss = criterion(clean_spec, est_mag, seq_len).item()
@@ -502,6 +500,8 @@ def validation(criterion, ap, model, testloader, tensorboard, step, cuda=True, l
                 mixed_phase = mixed_phase[0].cpu().detach().numpy()
 
                 est_wav = ap.inv_spectrogram(est_mag, phase=mixed_phase)
+                print(est_wav)
+                librosa.output.write_wav('teste.wav', est_wav, 22050)
                 est_mask = est_mask[0].cpu().detach().numpy()
 
                 if loss_name == 'si_snr':
