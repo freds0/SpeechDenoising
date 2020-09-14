@@ -87,7 +87,8 @@ def train_collate_fn(item):
     mixed_phase_list = []
     target_wav_list = []
     for target, mixed, seq_len, target_wav, mixed_phase in item:
-        target_list.append(target)
+        #target_list.append(target)
+        target_list.append(torch.from_numpy(target))
         mixed_list.append(mixed)
         seq_len_list.append(seq_len)
         mixed_phase_list.append(mixed_phase)

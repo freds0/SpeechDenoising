@@ -74,7 +74,11 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
     # composte loss
     #criterion_mse = nn.MSELoss()
     #criterion = nn.L1Loss()
-    if c.loss['loss_name'] == 'power_law_compression':
+    if c.loss['loss_name'] == 'mse':
+        criterion = nn.MSELoss()
+    elif c.loss['loss_name'] == 'l1':
+        criterion = nn.L1Loss()
+    elif c.loss['loss_name'] == 'power_law_compression':
         criterion = PowerLaw_Compressed_Loss(power, complex_ratio)
     elif c.loss['loss_name'] == 'si_snr':
         criterion = SiSNR_With_Pit()
@@ -107,7 +111,11 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     seq_len = None
                 
                 # Calculate loss
-                loss = criterion(output, target, seq_len)
+                if c.loss['loss_name'] == 'si_snr' or c.loss['loss_name'] == 'power_law_compression':
+                    loss = criterion(output, target, seq_len)
+                else:
+                    loss = criterion(output, target)
+
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -135,6 +143,8 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     print("Saved checkpoint to: %s" % save_path)
                     validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda)
                     model.train()
+
+                print('Step %d. Loss: %.5f'%(step, loss))
                 #except:
                 #print("Error, probably because the embedding reference is too small")
 

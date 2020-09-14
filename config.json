@@ -1,8 +1,8 @@
 {
     "model_name":"voicedenoising", // voicefilter and voicesplit
     "dataset":{
-        "train_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/train/",
-        "test_dir":"/media/fred/DADOS/data_aug_denoising/LibriTTS/dataset/test/",
+        "train_dir":"./data_train1/",
+        "test_dir":"./data_test/",
         "format":{ // format for glob search
             "mixed":"*-mix.pt",
             "target":"*-target.pt",
@@ -12,7 +12,7 @@
 
     },
     "loss":{
-        "loss_name":"si_snr", // si_snr or power_law_compression  si_snr for voicesplit and power_law_compression for voicefilter
+        "loss_name":"mse", // si_snr or power_law_compression  si_snr for voicesplit and power_law_compression for voicefilter
         "power": 0.30,
         "complex_loss_ratio":0.113 // \lambda  best value in paper https://arxiv.org/pdf/1811.07030.pdf
     },
